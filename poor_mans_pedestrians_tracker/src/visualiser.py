@@ -62,6 +62,7 @@ class Viewer(Visualiser):
 
         cv2.imshow(winname=self.__window_name, mat=frame)
         stop = cv2.waitKey(delay=1) & 0xFF == ord('q')
+
         return not stop
 
 
@@ -85,10 +86,9 @@ class Tracer(Visualiser):
     def act(self, frame, done_ids, est_ids, tracker):
         """
         """
-        self.__frame_counter += 1
-
         self._draw(frame=frame, done_ids=done_ids, est_ids=est_ids, tracker=tracker)
 
+        self.__frame_counter += 1
         file_name = os.path.join(self.__trace_folder_path, f'frame_{self.__frame_counter}.jpg')
         print(f'Annotate a frame at {file_name}')
         cv2.imwrite(filename=file_name, img=frame)
@@ -117,4 +117,5 @@ class Writer(Visualiser):
         self._draw(frame=frame, done_ids=done_ids, est_ids=est_ids, tracker=tracker)
 
         self.__writer.write(image=frame)
+
         return True
