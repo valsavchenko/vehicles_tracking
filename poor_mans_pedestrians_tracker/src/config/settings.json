@@ -1,0 +1,28 @@
+{
+  "detector": {
+    "weights_file_path": "config/yolov5s.onnx",
+    "labels_file_path": "config/coco.names",
+    "scale_factor": "1/255",
+    "size": [
+      640,
+      640
+    ],
+    "mean": [
+      0,
+      0,
+      0
+    ],
+    "swap_rb": true,
+    "crop": false,
+    "confidence_threshold": 0.45,
+    "class_label": "person",
+    "score_threshold": 0.5,
+    "nms_threshold": 0.45,
+    "eta": 1.0,
+    "top_k": 0
+  },
+  "tracker": {
+    "strategy": "kcf",
+    "iou_threshold": 0.5
+  }
+}
