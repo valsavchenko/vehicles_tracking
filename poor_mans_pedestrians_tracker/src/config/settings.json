@@ -23,6 +23,7 @@
   },
   "tracker": {
     "strategy": "kcf",
-    "iou_threshold": 0.5
+    "iou_threshold": 0.5,
+    "re_detect_every": 20
   }
 }
