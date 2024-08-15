@@ -16,6 +16,9 @@ def _collect_arguments():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--video_path', type=str, default=os.path.join('samples', 'pedestrians_0.mp4'),
                         help='A path to a video to analyze')
+    parser.add_argument('--roi', type=int, nargs=4, default=None,
+                        help='A region to watch out for objects at. '
+                             'Must be specified as a left-top-width-height tuple')
     parser.add_argument('--settings_file_path', type=str, default=os.path.join('config', 'settings.json'),
                         help='A path to a file with settings for the detector')
     parser.add_argument('--visualizer_type', type=str, choices=['viewer', 'tracer', 'writer'], default='tracer',
@@ -64,7 +67,7 @@ if __name__ == '__main__':
 
     reader = _create_frames_reader(args=args)
     detector = Detector(settings=settings['detector'])
-    tracker = Tracker(detector=detector, settings=settings['tracker'])
+    tracker = Tracker(detector=detector, settings=settings['tracker'], roi=args['roi'])
     visualiser = _create_visualiser(args=args, reader=reader)
 
     status = True

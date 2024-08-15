@@ -24,17 +24,24 @@ class Visualiser(metaclass=abc.ABCMeta):
     def _draw(self, frame, done_ids, est_ids, tracker):
         """
         """
+        # Show ROI
+        roi = tracker.get_roi()
+        cv2.rectangle(img=frame, pt1=roi[:2], pt2=[roi[i] + roi[i + 2] for i in range(2)], color=(0, 255, 0),
+                      thickness=8)
+
         for t in tracker.get_tracks():
             t_id = t.get_id()
             t_color = self.__get_color(t_id=t_id)
 
+            # Show object at the frame
             last_rect = t.get_last_rect()
             thickness = 4 if t_id in est_ids else 2
             cv2.rectangle(img=frame, pt1=last_rect[:2], pt2=[last_rect[i] + last_rect[i + 2] for i in range(2)],
                           color=t_color, thickness=thickness)
 
+            # Show positions of the object at the previous frames
             for p in t.get_centers():
-                cv2.circle(img=frame, center=p, radius=5, color=t_color, lineType=cv2.FILLED)
+                cv2.circle(img=frame, center=p, radius=thickness, color=t_color, lineType=cv2.FILLED)
 
         for d_id in done_ids:
             del self.__color_per_id[d_id]

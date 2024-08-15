@@ -31,6 +31,13 @@ class _Track:
         iou = area(rect_i) / float(area(rect_a) + area(rect_b) - area(rect_i))
         return iou
 
+    @staticmethod
+    def center(rect):
+        """
+        """
+        l, t, w, h = rect
+        return l + w // 2, t + h // 2
+
     @timer(label='Track creation')
     def __init__(self, engine, frame, seed_detection):
         """
@@ -79,7 +86,14 @@ class _Track:
         return cs
 
     def get_last_rect(self):
+        """
+        """
         return self.__points[-1]
+
+    def get_last_center(self):
+        """
+        """
+        return self.get_centers()[-1]
 
 
 class Tracker:
@@ -97,15 +111,25 @@ class Tracker:
 
         return creator_per_id[strategy]
 
-    def __init__(self, detector, settings):
+    @staticmethod
+    def __within(rect, center):
+        """
+        """
+        l, t, w, h = rect
+        x, y = center
+        return l <= x <= l + w and t <= y <= t + h
+
+    def __init__(self, detector, settings, roi):
         """
         """
         self.__detector = detector
 
-        self.__frames_seen = 0
         self.__tracking_engine_creator = self.__get_tracking_engine_creator(strategy=settings['strategy'])
         self.__iou_threshold = settings['iou_threshold']
         self.__re_detect_every = settings['re_detect_every']
+        self.__roi = roi
+
+        self.__frames_seen = 0
         self.__tracks = []
 
     @timer(label='Frame analysis')
@@ -114,27 +138,35 @@ class Tracker:
         """
         self.__frames_seen += 1
 
-        # Identify tracks that couldn't be extended natively
+        # Init ROI, if applicable
+        if self.__roi is None:
+            self.__roi = 0, 0, frame.shape[1] - 1, frame.shape[0] - 1
+
         done_inds = []
         for ti, t in enumerate(self.__tracks):
             tracked = t.extend(frame=frame)
-            if tracked:
-                continue
+            if not tracked:
+                # Identify tracks that couldn't be extended natively
+                done_inds.append(ti)
+            elif not self.__within(rect=self.__roi, center=t.get_last_center()):
+                # Identify tracks that stick out of the ROI
+                done_inds.append(ti)
 
-            done_inds.append(ti)
-
-        # Wrap up, if there are some tracks and they were extended natively
-        all_tracks_were_extended = not done_inds and self.__tracks
+        # Wrap up, if there are some tracks, they were extended natively, it's not time to look for extra objects
+        all_tracks_were_extended = not done_inds
         force_re_detection = 0 == self.__frames_seen % self.__re_detect_every
         if all_tracks_were_extended and not force_re_detection:
             return [], []
 
-        # Dismiss tracks failed to extended natively
+        # Dismiss tracks that failed to meet all criteria
         done_ids = [self.__tracks[ti].get_id() for ti in done_inds]
         self.__tracks = [t for ti, t in enumerate(self.__tracks) if ti not in done_inds]
 
+        # Re-detect all the legit objects
+        detections = [d for d in self.__detector.detect(frame=frame)
+                      if self.__within(rect=self.__roi, center=_Track.center(rect=d['lt_wh']))]
+
         done_inds = []
-        detections = self.__detector.detect(frame=frame)
         for ti, t in enumerate(self.__tracks):
             di = t.select_best_match(iou_threshold=self.__iou_threshold, detections=detections)
             # Identify tracks that fail to match detections of the frame
@@ -166,3 +198,8 @@ class Tracker:
         """
         """
         return self.__tracks
+
+    def get_roi(self):
+        """
+        """
+        return self.__roi
