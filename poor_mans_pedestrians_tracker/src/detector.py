@@ -23,6 +23,8 @@ class Detector:
 
         # Establish the model
         self.__model = cv2.dnn.readNetFromONNX(onnxFile=settings['weights_file_path'])
+        self.__model.setPreferableBackend(backendId=cv2.dnn.DNN_BACKEND_CUDA)
+        self.__model.setPreferableTarget(targetId=cv2.dnn.DNN_TARGET_CUDA)
         layer_names = self.__model.getLayerNames()
         self.__output_layers = [layer_names[ol - 1] for ol in self.__model.getUnconnectedOutLayers()]
 
