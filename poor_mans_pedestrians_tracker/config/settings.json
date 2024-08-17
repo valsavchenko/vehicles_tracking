@@ -1,7 +1,7 @@
 {
   "detector": {
-    "weights_file_path": "config/yolov5s.onnx",
-    "labels_file_path": "config/coco.names",
+    "weights_file_path": "../config/yolov5s.onnx",
+    "labels_file_path": "../config/coco.names",
     "scale_factor": "1/255",
     "size": [
       640,
