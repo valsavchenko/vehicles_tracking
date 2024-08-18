@@ -7,6 +7,7 @@ import cv2
 
 class Visualiser(metaclass=abc.ABCMeta):
     """
+    Provides a common interface for all kinds of visualizers
     """
 
     def __init__(self):
@@ -23,6 +24,7 @@ class Visualiser(metaclass=abc.ABCMeta):
 
     def _draw(self, frame, done_ids, est_ids, tracker):
         """
+        Draws tracking results for a frame at it
         """
         # Show ROI
         roi = tracker.get_roi()
@@ -43,18 +45,21 @@ class Visualiser(metaclass=abc.ABCMeta):
             for p in t.get_centers():
                 cv2.circle(img=frame, center=p, radius=thickness, color=t_color, lineType=cv2.FILLED)
 
+        # Dismiss colors for deceased tracks
         for d_id in done_ids:
             del self.__color_per_id[d_id]
 
     @abc.abstractmethod
     def act(self, frame, done_ids, est_ids, tracker):
         """
+        Visualizes tracking results for a frame in a specific way
         """
         return False
 
 
 class Viewer(Visualiser):
     """
+    Visualizes tracking results with a live video via GUI
     """
 
     def __init__(self):
@@ -68,13 +73,15 @@ class Viewer(Visualiser):
         self._draw(frame=frame, done_ids=done_ids, est_ids=est_ids, tracker=tracker)
 
         cv2.imshow(winname=self.__window_name, mat=frame)
-        stop = cv2.waitKey(delay=1) & 0xFF == ord('q')
 
+        # Wrap up, if user told so
+        stop = cv2.waitKey(delay=1) & 0xFF == ord('q')
         return not stop
 
 
 class Tracer(Visualiser):
     """
+    Visualizes tracking results with separate frames
     """
 
     def __init__(self, trace_folder_path):
@@ -91,8 +98,6 @@ class Tracer(Visualiser):
         self.__trace_folder_path = trace_folder_path
 
     def act(self, frame, done_ids, est_ids, tracker):
-        """
-        """
         self._draw(frame=frame, done_ids=done_ids, est_ids=est_ids, tracker=tracker)
 
         self.__frame_counter += 1
@@ -105,6 +110,7 @@ class Tracer(Visualiser):
 
 class Writer(Visualiser):
     """
+    Visualizes tracking results with a video
     """
 
     def __init__(self, annotated_video_path, reader):
@@ -112,6 +118,7 @@ class Writer(Visualiser):
 
         print(f'Annotate video at {annotated_video_path}')
 
+        # Force Motion JPEG to mitigate codecs hassles
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
         fps = int(reader.get(cv2.CAP_PROP_FPS))
         size = int(reader.get(cv2.CAP_PROP_FRAME_WIDTH)), int(reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
