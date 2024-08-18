@@ -64,7 +64,10 @@ class Viewer(Visualiser):
 
     def __init__(self):
         super().__init__()
+
         self.__window_name = 'Tracking some objects'
+        self.__width = 800
+        self.__height = None
 
     def __del__(self):
         cv2.destroyWindow(winname=self.__window_name)
@@ -72,6 +75,10 @@ class Viewer(Visualiser):
     def act(self, frame, done_ids, est_ids, tracker):
         self._draw(frame=frame, done_ids=done_ids, est_ids=est_ids, tracker=tracker)
 
+        if self.__height is None:
+            self.__height = int(self.__width * frame.shape[0] / frame.shape[1])
+
+        frame = cv2.resize(src=frame, dsize=(self.__width, self.__height))
         cv2.imshow(winname=self.__window_name, mat=frame)
 
         # Wrap up, if user told so
