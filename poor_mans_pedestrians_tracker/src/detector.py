@@ -47,7 +47,7 @@ class Detector:
         blob = cv2.dnn.blobFromImage(image=frame, **self.__pre_processing_params)
         return blob
 
-    @timer(label='Obj detection')
+    @timer(label='obj_det')
     def detect(self, frame):
         """
         """

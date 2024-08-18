@@ -38,7 +38,7 @@ class _Track:
         l, t, w, h = rect
         return l + w // 2, t + h // 2
 
-    @timer(label='Track creation')
+    @timer(label='trk_creation')
     def __init__(self, logger, engine, frame, seed_detection):
         """
         """
@@ -53,7 +53,7 @@ class _Track:
         """
         return self.__logger
 
-    @timer(label='Track extension')
+    @timer(label='trk_update')
     def extend(self, frame):
         """
         """
@@ -63,7 +63,7 @@ class _Track:
 
         return tracked
 
-    @timer(label='Track association')
+    @timer(label='trk_det_association')
     def select_best_match(self, iou_threshold, detections):
         """
         """
@@ -144,7 +144,7 @@ class Tracker:
         """
         return self.__logger
 
-    @timer(label='Frame analysis')
+    @timer(label='frame_handling')
     def track(self, frame):
         """
         """
