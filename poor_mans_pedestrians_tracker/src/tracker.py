@@ -39,13 +39,19 @@ class _Track:
         return l + w // 2, t + h // 2
 
     @timer(label='Track creation')
-    def __init__(self, engine, frame, seed_detection):
+    def __init__(self, logger, engine, frame, seed_detection):
         """
         """
+        self.__logger = logger
         self.__engine = engine
         self.__engine.init(image=frame, boundingBox=seed_detection['lt_wh'])
         self.__points = [seed_detection['lt_wh'], ]
         self.__id = self.__get_unique_stable_id()
+
+    def get_logger(self):
+        """
+        """
+        return self.__logger
 
     @timer(label='Track extension')
     def extend(self, frame):
@@ -119,9 +125,10 @@ class Tracker:
         x, y = center
         return l <= x <= l + w and t <= y <= t + h
 
-    def __init__(self, detector, settings, roi):
+    def __init__(self, logger, detector, settings, roi):
         """
         """
+        self.__logger = logger
         self.__detector = detector
 
         self.__tracking_engine_creator = self.__get_tracking_engine_creator(strategy=settings['strategy'])
@@ -131,6 +138,11 @@ class Tracker:
 
         self.__frames_seen = 0
         self.__tracks = []
+
+    def get_logger(self):
+        """
+        """
+        return self.__logger
 
     @timer(label='Frame analysis')
     def track(self, frame):
@@ -185,9 +197,10 @@ class Tracker:
         est_ids = []
         for d in detections:
             try:
-                t = _Track(engine=self.__tracking_engine_creator(), frame=frame, seed_detection=d)
+                t = _Track(logger=self.get_logger(), engine=self.__tracking_engine_creator(), frame=frame,
+                           seed_detection=d)
             except Exception as e:
-                print(f'{e}')
+                self.__logger.error(f'{e}')
             else:
                 est_ids.append(t.get_id())
                 self.__tracks.append(t)

@@ -8,10 +8,12 @@ class Detector:
     """
     """
 
-    def __init__(self, settings):
+    def __init__(self, logger, settings):
         """
         Sets up a model to infer with
         """
+        self.__logger = logger
+
         # Read pre-processing params
         self.__pre_processing_params = {
             'scalefactor': eval(settings['scale_factor']),
@@ -87,3 +89,8 @@ class Detector:
 
         class_objs = [{'lt_wh': boxes[bi], 'score': scores[bi]} for bi in max_box_ids]
         return class_objs
+
+    def get_logger(self):
+        """
+        """
+        return self.__logger

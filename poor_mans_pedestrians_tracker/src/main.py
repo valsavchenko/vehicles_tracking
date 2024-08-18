@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import os
 
 import cv2
@@ -22,10 +23,40 @@ def _collect_arguments():
     parser.add_argument('--settings_file_path', type=str, default=os.path.join('..', 'config', 'settings.json'),
                         help='A path to a file with settings for the detector')
     parser.add_argument('--visualizer_type', type=str, choices=['viewer', 'tracer', 'writer'], default='tracer',
-                        help='A way to supply results')
+                        help='A way to present results')
     parser.add_argument('--output_root', type=str, required=True, help='A path to a output root')
 
     return vars(parser.parse_args())
+
+
+def _secure_output_root(args):
+    """
+    """
+    os.makedirs(name=args['output_root'], exist_ok=True)
+
+
+def _setup_logging(args):
+    """
+    """
+    logger = logging.getLogger('Tracker')
+    formatter = logging.Formatter(fmt='%(asctime)s [%(levelname)s] %(message)s')
+    logger.setLevel(logging.DEBUG)
+
+    # Configure console logging
+    stdout = logging.StreamHandler()
+    stdout.setLevel(level=logging.INFO)
+    stdout.setFormatter(fmt=formatter)
+    logger.addHandler(hdlr=stdout)
+
+    # Configure file logging
+    log_path = os.path.join(args['output_root'], 'tracker.log')
+    file = logging.FileHandler(filename=log_path, encoding='utf-8', mode='a')
+    file.setLevel(level=logging.DEBUG)
+    file.setFormatter(fmt=formatter)
+    logger.addHandler(hdlr=file)
+    logger.info(f'Store logs at {log_path}')
+
+    return logger
 
 
 def _create_frames_reader(args):
@@ -42,33 +73,31 @@ def _create_frames_reader(args):
     return reader
 
 
-def _create_visualiser(args, reader):
+def _create_visualiser(logger, args, reader):
     """
     """
-    visualiser = None
-
     vt = args['visualizer_type']
-    if 'tracer' == vt:
-        tracer_folder_path = os.path.join(args['output_root'], 'trace')
-        visualiser = Tracer(trace_folder_path=tracer_folder_path)
-    elif 'writer' == vt:
-        video_name, video_ext = os.path.splitext(os.path.basename(args['video_path']))
-        annotated_video_path = os.path.join(args['output_root'], video_name + '_annotated.avi')
-        visualiser = Writer(annotated_video_path=annotated_video_path, reader=reader)
-    else:
-        visualiser = Viewer()
+    visualiser = {
+        'tracer': lambda: Tracer(logger=logger, args=args),
+        'writer': lambda: Writer(logger=logger, args=args, reader=reader),
+        'viewer': lambda: Viewer(logger=logger)
+    }[vt]()
 
     return visualiser
 
 
 if __name__ == '__main__':
     args = _collect_arguments()
-    settings = json.load(fp=open(file=args['settings_file_path']))
+    _secure_output_root(args=args)
+    logger = _setup_logging(args=args)
 
     reader = _create_frames_reader(args=args)
-    detector = Detector(settings=settings['detector'])
-    tracker = Tracker(detector=detector, settings=settings['tracker'], roi=args['roi'])
-    visualiser = _create_visualiser(args=args, reader=reader)
+
+    settings = json.load(fp=open(file=args['settings_file_path']))
+    detector = Detector(logger=logger, settings=settings['detector'])
+    tracker = Tracker(logger=logger, detector=detector, settings=settings['tracker'], roi=args['roi'])
+
+    visualiser = _create_visualiser(logger=logger, args=args, reader=reader)
 
     status = True
     while status:

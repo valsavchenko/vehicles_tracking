@@ -10,7 +10,8 @@ class Visualiser(metaclass=abc.ABCMeta):
     Provides a common interface for all kinds of visualizers
     """
 
-    def __init__(self):
+    def __init__(self, logger):
+        self._logger = logger
         self.__color_per_id = {}
 
     def __get_color(self, t_id):
@@ -62,8 +63,8 @@ class Viewer(Visualiser):
     Visualizes tracking results with a live video via GUI
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, logger):
+        super().__init__(logger=logger)
 
         self.__window_name = 'Tracking some objects'
         self.__width = 800
@@ -91,13 +92,14 @@ class Tracer(Visualiser):
     Visualizes tracking results with separate frames
     """
 
-    def __init__(self, trace_folder_path):
-        super().__init__()
+    def __init__(self, logger, args):
+        super().__init__(logger=logger)
 
+        trace_folder_path = os.path.join(args['output_root'], 'trace')
         try:
             os.mkdir(path=trace_folder_path)
         except FileExistsError:
-            print(f'Purge the tracking location at {trace_folder_path}')
+            self._logger.warning(f'Purge the tracking location at {trace_folder_path}')
             shutil.rmtree(path=trace_folder_path)
             os.mkdir(path=trace_folder_path)
 
@@ -109,7 +111,7 @@ class Tracer(Visualiser):
 
         self.__frame_counter += 1
         file_name = os.path.join(self.__trace_folder_path, f'frame_{self.__frame_counter}.jpg')
-        print(f'Annotate a frame at {file_name}')
+        self._logger.debug(f'Annotate a frame at {file_name}')
         cv2.imwrite(filename=file_name, img=frame)
 
         return True
@@ -120,10 +122,12 @@ class Writer(Visualiser):
     Visualizes tracking results with a video
     """
 
-    def __init__(self, annotated_video_path, reader):
-        super().__init__()
+    def __init__(self, logger, args, reader):
+        super().__init__(logger=logger)
 
-        print(f'Annotate video at {annotated_video_path}')
+        video_name, video_ext = os.path.splitext(os.path.basename(args['video_path']))
+        annotated_video_path = os.path.join(args['output_root'], f'{video_name}_annotated.avi')
+        self._logger.info(f'Annotate video at {annotated_video_path}')
 
         # Force Motion JPEG to mitigate codecs hassles
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
