@@ -3,7 +3,6 @@ import os
 import shutil
 
 import cv2
-import numpy as np
 
 
 class Visualiser(metaclass=abc.ABCMeta):
@@ -15,9 +14,10 @@ class Visualiser(metaclass=abc.ABCMeta):
 
     def __get_color(self, t_id):
         """
+        Computes a stable color for a track with stable id
         """
         if t_id not in self.__color_per_id:
-            self.__color_per_id[t_id] = [int(np.random.uniform(0, 255)) for _ in range(3)]
+            self.__color_per_id[t_id] = [f % 255 for f in t_id.fields[:3]]
 
         return self.__color_per_id[t_id]
 
