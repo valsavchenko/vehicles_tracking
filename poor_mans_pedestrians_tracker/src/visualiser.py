@@ -36,11 +36,24 @@ class Visualiser(metaclass=abc.ABCMeta):
             t_id = t.get_id()
             t_color = self.__get_color(t_id=t_id)
 
-            # Show object at the frame
+            # Show an object at the frame
             last_rect = t.get_last_rect()
             thickness = 4 if t_id in est_ids else 2
             cv2.rectangle(img=frame, pt1=last_rect[:2], pt2=[last_rect[i] + last_rect[i + 2] for i in range(2)],
                           color=t_color, thickness=thickness)
+
+            # Show object's id
+            text = str(t_id)[:8]
+            font_face = cv2.FONT_HERSHEY_PLAIN
+            font_scale = 1
+            text_thickness = 2
+            text_size, _ = cv2.getTextSize(text=text, fontFace=font_face, fontScale=font_scale,
+                                           thickness=text_thickness)
+            cv2.rectangle(img=frame, pt1=last_rect[:2],
+                          pt2=[c + k * s for c, s, k in zip(last_rect[:2], text_size, [1, -1])],
+                          color=t_color, thickness=cv2.FILLED)
+            cv2.putText(img=frame, text=text, org=last_rect[:2], fontFace=font_face, fontScale=font_scale,
+                        color=(0, 0, 0))
 
             # Show positions of the object at the previous frames
             for p in t.get_centers():
