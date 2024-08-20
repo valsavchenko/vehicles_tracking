@@ -95,7 +95,7 @@ class Tracer(Visualiser):
     def __init__(self, logger, args):
         super().__init__(logger=logger)
 
-        trace_folder_path = os.path.join(args['output_root'], 'trace')
+        trace_folder_path = os.path.abspath(os.path.join(args['output_root'], 'trace'))
         try:
             os.mkdir(path=trace_folder_path)
         except FileExistsError:
@@ -103,16 +103,16 @@ class Tracer(Visualiser):
             shutil.rmtree(path=trace_folder_path)
             os.mkdir(path=trace_folder_path)
 
-        self.__frame_counter = -1
+        self.__frame_counter = 0
         self.__trace_folder_path = trace_folder_path
 
     def act(self, frame, done_ids, est_ids, tracker):
         self._draw(frame=frame, done_ids=done_ids, est_ids=est_ids, tracker=tracker)
 
         self.__frame_counter += 1
-        file_name = os.path.join(self.__trace_folder_path, f'frame_{self.__frame_counter}.jpg')
-        self._logger.debug(f'Annotate a frame at {file_name}')
-        cv2.imwrite(filename=file_name, img=frame)
+        file_path = os.path.abspath(os.path.join(self.__trace_folder_path, f'frame_{self.__frame_counter:05}.jpg'))
+        self._logger.debug(f'Annotate a frame at {file_path}')
+        cv2.imwrite(filename=file_path, img=frame)
 
         return True
 
@@ -126,7 +126,7 @@ class Writer(Visualiser):
         super().__init__(logger=logger)
 
         video_name, video_ext = os.path.splitext(os.path.basename(args['video_path']))
-        annotated_video_path = os.path.join(args['output_root'], f'{video_name}_annotated.avi')
+        annotated_video_path = os.path.abspath(os.path.join(args['output_root'], f'{video_name}_annotated.avi'))
         self._logger.info(f'Annotate video at {annotated_video_path}')
 
         # Force Motion JPEG to mitigate codecs hassles

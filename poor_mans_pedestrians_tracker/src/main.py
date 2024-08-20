@@ -49,7 +49,7 @@ def _setup_logging(args):
     logger.addHandler(hdlr=stdout)
 
     # Configure file logging
-    log_path = os.path.join(args['output_root'], 'tracker.log')
+    log_path = os.path.abspath(os.path.join(args['output_root'], 'tracker.log'))
     file = logging.FileHandler(filename=log_path, encoding='utf-8', mode='a')
     file.setLevel(level=logging.DEBUG)
     file.setFormatter(fmt=formatter)

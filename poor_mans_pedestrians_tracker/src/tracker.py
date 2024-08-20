@@ -194,6 +194,10 @@ class Tracker:
                                   f'}}')
         self.__tracks = [t for ti, t in enumerate(self.__tracks)
                          if ti not in failed_to_extend_inds + stick_out_roi_inds]
+        self.get_logger().debug(f'Maintain tracks before re-detection: {{'
+                                f'"frame_id": {self.__frames_seen}, '
+                                f'"ids": {[t.get_id() for t in self.__tracks]}'
+                                f'}}')
 
         # Re-detect all the legit objects
         detections = [d for d in self.__detector.detect(frame=frame)
@@ -223,6 +227,10 @@ class Tracker:
                                   f'}}')
         done_ids.extend(phantom_ids)
         self.__tracks = [t for ti, t in enumerate(self.__tracks) if ti not in done_inds]
+        self.get_logger().debug(f'Maintain non-phantom tracks: {{'
+                                f'"frame_id": {self.__frames_seen}, '
+                                f'"ids": {[t.get_id() for t in self.__tracks]}'
+                                f'}}')
 
         # Establish tracks for unbound detections of the frame
         est_ids = []
