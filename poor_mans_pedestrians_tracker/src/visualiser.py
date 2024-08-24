@@ -32,12 +32,12 @@ class Visualiser(metaclass=abc.ABCMeta):
         cv2.rectangle(img=frame, pt1=roi[:2], pt2=[roi[i] + roi[i + 2] for i in range(2)], color=(0, 255, 0),
                       thickness=8)
 
-        for t in tracker.get_tracks():
-            t_id = t.get_id()
+        for track in tracker.get_tracks():
+            t_id = track.get_id()
             t_color = self.__get_color(t_id=t_id)
 
             # Show an object at the frame
-            last_rect = t.get_last_rect()
+            last_rect = track.get_last_rect()
             thickness = 4 if t_id in est_ids else 2
             cv2.rectangle(img=frame, pt1=last_rect[:2], pt2=[last_rect[i] + last_rect[i + 2] for i in range(2)],
                           color=t_color, thickness=thickness)
@@ -56,7 +56,7 @@ class Visualiser(metaclass=abc.ABCMeta):
                         color=(0, 0, 0))
 
             # Show positions of the object at the previous frames
-            for p in t.get_centers():
+            for p in track.get_centers():
                 cv2.circle(img=frame, center=p, radius=thickness, color=t_color, lineType=cv2.FILLED)
 
         # Dismiss colors for deceased tracks

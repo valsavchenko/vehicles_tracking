@@ -144,7 +144,34 @@ class Tracker:
                                f'}}')
 
         self.__frames_seen = 0
-        self.__tracks = []
+        self.__tracks = {}
+
+    def __add_track(self, track):
+        """
+        """
+        self.__tracks[track.get_id()] = track
+
+    def __get_track(self, t_id):
+        """
+        """
+        track = self.__tracks[t_id]
+        assert t_id == track.get_id()
+        return track
+
+    def __dismiss_track(self, t_id):
+        """
+        """
+        del self.__tracks[t_id]
+
+    def __dismiss_tracks(self, t_ids):
+        """
+        """
+        [self.__dismiss_track(t_id=t_id) for t_id in t_ids]
+
+    def __get_track_ids(self):
+        """
+        """
+        return sorted(self.__tracks.keys())
 
     def get_logger(self):
         """
@@ -165,38 +192,47 @@ class Tracker:
             self.__roi = 0, 0, frame.shape[1] - 1, frame.shape[0] - 1
             self.get_logger().info(f'Settle the ROI: {{"ltwh": {self.__roi}}}')
 
-        failed_to_extend_inds, stick_out_roi_inds = [], []
-        for ti, t in enumerate(self.__tracks):
-            tracked = t.extend(frame=frame)
+        failed_to_extend_ids, stick_out_roi_ids = [], []
+        for t_id in self.__get_track_ids():
+            track = self.__get_track(t_id=t_id)
+
+            tracked = track.extend(frame=frame)
             if not tracked:
                 # Identify tracks that couldn't be extended natively
-                failed_to_extend_inds.append(ti)
-            elif not self.__within(rect=self.__roi, center=t.get_last_center()):
+                failed_to_extend_ids.append(track.get_id())
+            elif not self.__within(rect=self.__roi, center=track.get_last_center()):
                 # Identify tracks that stick out of the ROI
-                stick_out_roi_inds.append(ti)
+                stick_out_roi_ids.append(track.get_id())
 
         # Wrap up, if there are some tracks, they were extended natively, it's not the time to look for extra objects
-        all_tracks_were_extended = not bool(failed_to_extend_inds + stick_out_roi_inds)
+        all_tracks_were_extended = not bool(failed_to_extend_ids + stick_out_roi_ids)
         force_re_detection = 0 == self.__frames_seen % self.__re_detect_every
         if all_tracks_were_extended and not force_re_detection:
             self.get_logger().debug(f'Extend all tracks successfully: {{'
                                     f'"frame_id": {self.__frames_seen}, '
-                                    f'"ids": {[t.get_id() for t in self.get_tracks()]}'
+                                    f'"ids": {self.__get_track_ids()}'
                                     f'}}')
             return [], []
 
-        # Dismiss tracks that failed to meet all criteria
-        done_ids = [self.__tracks[ti].get_id() for ti in failed_to_extend_inds + stick_out_roi_inds]
-        self.get_logger().log(level=logging.INFO if done_ids else logging.DEBUG,
-                              msg=f'Dismiss unqualified tracks: {{'
+        # Dismiss tracks that failed to extend
+        self.get_logger().log(level=logging.INFO if failed_to_extend_ids else logging.DEBUG,
+                              msg=f'Dismiss tracks failed to extend: {{'
                                   f'"frame_id": {self.__frames_seen}, '
-                                  f'"ids": {done_ids}'
+                                  f'"ids": {failed_to_extend_ids}'
                                   f'}}')
-        self.__tracks = [t for ti, t in enumerate(self.__tracks)
-                         if ti not in failed_to_extend_inds + stick_out_roi_inds]
+        self.__dismiss_tracks(t_ids=failed_to_extend_ids)
+
+        # Dismiss tracks which stick outside the ROI
+        self.get_logger().log(level=logging.INFO if stick_out_roi_ids else logging.DEBUG,
+                              msg=f'Dismiss tracks which stick outside the ROI: {{'
+                                  f'"frame_id": {self.__frames_seen}, '
+                                  f'"ids": {stick_out_roi_ids}, '
+                                  f'}}')
+        self.__dismiss_tracks(t_ids=stick_out_roi_ids)
+
         self.get_logger().debug(f'Maintain tracks before re-detection: {{'
                                 f'"frame_id": {self.__frames_seen}, '
-                                f'"ids": {[t.get_id() for t in self.__tracks]}'
+                                f'"ids": {self.__get_track_ids()}'
                                 f'}}')
 
         # Re-detect all the legit objects
@@ -207,42 +243,43 @@ class Tracker:
                                 f'"data": {detections}'
                                 f'}}')
 
-        done_inds = []
-        for ti, t in enumerate(self.__tracks):
-            di = t.select_best_match(iou_threshold=self.__iou_threshold, detections=detections)
+        phantom_ids = []
+        for t_id in self.__get_track_ids():
+            track = self.__get_track(t_id=t_id)
+
             # Identify tracks that fail to match detections of the frame
-            if di is None:
-                done_inds.append(ti)
+            d_ind = track.select_best_match(iou_threshold=self.__iou_threshold, detections=detections)
+            if d_ind is None:
+                phantom_ids.append(t_id)
                 continue
 
             # Identify trackless detections
-            detections = detections[:di] + detections[di + 1:]
+            detections = detections[:d_ind] + detections[d_ind + 1:]
 
         # Dismiss tracks failed to match detection of the frame
-        phantom_ids = [self.__tracks[ti].get_id() for ti in done_inds]
-        self.get_logger().log(level=logging.INFO if done_inds else logging.DEBUG,
+        self.get_logger().log(level=logging.INFO if phantom_ids else logging.DEBUG,
                               msg=f'Dismiss phantom tracks: {{'
                                   f'"frame_id": {self.__frames_seen}, '
                                   f'"ids": {phantom_ids}'
                                   f'}}')
-        done_ids.extend(phantom_ids)
-        self.__tracks = [t for ti, t in enumerate(self.__tracks) if ti not in done_inds]
-        self.get_logger().debug(f'Maintain non-phantom tracks: {{'
+        self.__dismiss_tracks(t_ids=phantom_ids)
+
+        self.get_logger().debug(f'Maintain tracks since the previous frame: {{'
                                 f'"frame_id": {self.__frames_seen}, '
-                                f'"ids": {[t.get_id() for t in self.__tracks]}'
+                                f'"ids": {[t.get_id() for t in self.get_tracks()]}'
                                 f'}}')
 
         # Establish tracks for unbound detections of the frame
         est_ids = []
         for d in detections:
             try:
-                t = _Track(logger=self.get_logger(), engine=self.__tracking_engine_creator(), frame=frame,
-                           seed_detection=d)
+                track = _Track(logger=self.get_logger(), engine=self.__tracking_engine_creator(), frame=frame,
+                               seed_detection=d)
             except Exception as e:
                 self.__logger.error(f'{e}')
             else:
-                est_ids.append(t.get_id())
-                self.__tracks.append(t)
+                self.__add_track(track=track)
+                est_ids.append(track.get_id())
 
         self.get_logger().log(level=logging.INFO if est_ids else logging.DEBUG,
                               msg=f'Establish some tracks: {{'
@@ -250,12 +287,12 @@ class Tracker:
                                   f'"ids": {est_ids}'
                                   f'}}')
 
-        return done_ids, est_ids
+        return failed_to_extend_ids + stick_out_roi_ids + phantom_ids, est_ids
 
     def get_tracks(self):
         """
         """
-        return self.__tracks
+        return self.__tracks.values()
 
     def get_roi(self):
         """
