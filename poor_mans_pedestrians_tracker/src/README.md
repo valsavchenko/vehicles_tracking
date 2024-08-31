@@ -5,3 +5,5 @@
 - https://pyimagesearch.com/2018/07/30/opencv-object-tracking/
 - https://nullprogram.com/blog/2020/08/01/
 - https://pyimagesearch.com/2020/02/03/how-to-use-opencvs-dnn-module-with-nvidia-gpus-cuda-and-cudnn/
+- https://docs.opencv.org/4.x/da/d9d/tutorial_dnn_yolo.html
+- https://github.com/THU-MIG/yolov10
