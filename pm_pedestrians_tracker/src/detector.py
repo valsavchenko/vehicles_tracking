@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from timer import timer
+from _ped_trk.timer import timer
 
 
 class Detector:

@@ -4,7 +4,7 @@ import uuid
 
 import cv2
 
-from timer import timer
+from _ped_trk.timer import timer
 
 
 class _Track:
