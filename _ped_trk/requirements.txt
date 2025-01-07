@@ -1,0 +1,1 @@
+# Do not depend on OpenCV explicitly, but rather borrow it from a real *_tracker, since it might require custom builds

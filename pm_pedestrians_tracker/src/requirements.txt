@@ -1,2 +1,2 @@
 numpy
-opencv-contrib-python
+# Do not depend on OpenCV explicitly, since a custom one should be built from sources with proper DNN support
