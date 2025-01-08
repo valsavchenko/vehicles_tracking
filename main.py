@@ -13,6 +13,8 @@ def _collect_arguments():
     """
     parser = argparse.ArgumentParser(description='Tracks pedestrians on a video',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--strategy', type=str, choices=['pm', 'cm'], default='pm',
+                        help='A tracking strategy to follow')
     parser.add_argument('--video_path', type=str,
                         default=os.path.join('samples', 'pedestrians_0.mp4'),
                         help='A path to a video to analyze')
@@ -78,10 +80,15 @@ def _create_tracker(args, logger, settings):
     """
     tracker = None
 
-    mode = 'pm'
-    if 'pm' == mode:
+    strategy = args['strategy']
+    if 'pm' == strategy:
         from pm_pedestrians_tracker.src.detector import Detector
         from pm_pedestrians_tracker.src.tracker import Tracker
+        detector = Detector(logger=logger, settings=settings['detector'])
+        tracker = Tracker(logger=logger, detector=detector, settings=settings['tracker'], roi=args['roi'])
+    elif 'cm' == strategy:
+        from cm_pedestrians_tracker.src.detector import Detector
+        from cm_pedestrians_tracker.src.tracker import Tracker
         detector = Detector(logger=logger, settings=settings['detector'])
         tracker = Tracker(logger=logger, detector=detector, settings=settings['tracker'], roi=args['roi'])
 
