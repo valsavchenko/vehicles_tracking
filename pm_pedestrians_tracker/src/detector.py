@@ -1,10 +1,10 @@
 import cv2
 import numpy as np
 
-from _ped_trk.timer import timer
+import _ped_trk.timer
 
 
-class Detector:
+class Detector(_ped_trk.timer.Timeable):
     """
     """
 
@@ -12,7 +12,7 @@ class Detector:
         """
         Sets up a model to infer with
         """
-        self.__logger = logger
+        super().__init__(logger=logger)
 
         # Read pre-processing params
         self.__pre_processing_params = {
@@ -47,7 +47,7 @@ class Detector:
         blob = cv2.dnn.blobFromImage(image=frame, **self.__pre_processing_params)
         return blob
 
-    @timer(label='obj_det')
+    @_ped_trk.timer.timer(label='obj_det')
     def detect(self, frame):
         """
         """
@@ -89,8 +89,3 @@ class Detector:
 
         class_objs = [{'lt_wh': boxes[bi], 'score': scores[bi]} for bi in max_box_ids]
         return class_objs
-
-    def get_logger(self):
-        """
-        """
-        return self.__logger

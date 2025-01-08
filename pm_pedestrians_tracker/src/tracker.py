@@ -4,10 +4,11 @@ import uuid
 
 import cv2
 
-from _ped_trk.timer import timer
+import _ped_trk.timer
+import _ped_trk.tracker
 
 
-class _Track:
+class _Track(_ped_trk.tracker.Track, _ped_trk.timer.Timeable):
     """
     """
     __STABLE_ID_GENERATOR = random.Random(x=7292)
@@ -39,22 +40,18 @@ class _Track:
         l, t, w, h = rect
         return l + w // 2, t + h // 2
 
-    @timer(label='trk_creation')
+    @_ped_trk.timer.timer(label='trk_creation')
     def __init__(self, logger, engine, frame, seed_detection):
         """
         """
-        self.__logger = logger
+        super().__init__(logger=logger)
+
         self.__engine = engine
         self.__engine.init(image=frame, boundingBox=seed_detection['lt_wh'])
         self.__points = [seed_detection['lt_wh'], ]
         self.__id = self.__get_unique_stable_id()
 
-    def get_logger(self):
-        """
-        """
-        return self.__logger
-
-    @timer(label='trk_update')
+    @_ped_trk.timer.timer(label='trk_update')
     def extend(self, frame):
         """
         """
@@ -64,7 +61,7 @@ class _Track:
 
         return tracked
 
-    @timer(label='trk_det_association')
+    @_ped_trk.timer.timer(label='trk_det_association')
     def select_best_match(self, iou_threshold, detections):
         """
         """
@@ -103,7 +100,7 @@ class _Track:
         return self.get_centers()[-1]
 
 
-class Tracker:
+class Tracker(_ped_trk.tracker.Tracker, _ped_trk.timer.Timeable):
     """
     """
 
@@ -129,7 +126,8 @@ class Tracker:
     def __init__(self, logger, detector, settings, roi):
         """
         """
-        self.__logger = logger
+        super().__init__(logger=logger)
+
         self.__detector = detector
 
         self.__tracking_engine_creator = self.__get_tracking_engine_creator(strategy=settings['strategy'])
@@ -173,12 +171,7 @@ class Tracker:
         """
         return sorted(self.__tracks.keys())
 
-    def get_logger(self):
-        """
-        """
-        return self.__logger
-
-    @timer(label='frame_handling')
+    @_ped_trk.timer.timer(label='frame_handling')
     def track(self, frame):
         """
         """

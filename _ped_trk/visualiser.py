@@ -157,3 +157,16 @@ class Writer(Visualiser):
         self.__writer.write(image=frame)
 
         return True
+
+
+def create_visualizer(logger, args, reader):
+    """
+    """
+    vt = args['visualizer_type']
+    visualiser = {
+        'tracer': lambda: Tracer(logger=logger, args=args),
+        'writer': lambda: Writer(logger=logger, args=args, reader=reader),
+        'viewer': lambda: Viewer(logger=logger)
+    }[vt]()
+
+    return visualiser

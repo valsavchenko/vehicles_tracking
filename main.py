@@ -4,9 +4,8 @@ import logging
 import os
 
 import cv2
-from _ped_trk.visualiser import Viewer, Tracer, Writer
-from pm_pedestrians_tracker.src.detector import Detector
-from pm_pedestrians_tracker.src.tracker import Tracker
+
+from _ped_trk.visualiser import create_visualizer
 
 
 def _collect_arguments():
@@ -74,17 +73,19 @@ def _create_frames_reader(args):
     return reader
 
 
-def _create_visualiser(logger, args, reader):
+def _create_tracker(args, logger, settings):
     """
     """
-    vt = args['visualizer_type']
-    visualiser = {
-        'tracer': lambda: Tracer(logger=logger, args=args),
-        'writer': lambda: Writer(logger=logger, args=args, reader=reader),
-        'viewer': lambda: Viewer(logger=logger)
-    }[vt]()
+    tracker = None
 
-    return visualiser
+    mode = 'pm'
+    if 'pm' == mode:
+        from pm_pedestrians_tracker.src.detector import Detector
+        from pm_pedestrians_tracker.src.tracker import Tracker
+        detector = Detector(logger=logger, settings=settings['detector'])
+        tracker = Tracker(logger=logger, detector=detector, settings=settings['tracker'], roi=args['roi'])
+
+    return tracker
 
 
 if __name__ == '__main__':
@@ -92,13 +93,11 @@ if __name__ == '__main__':
     _secure_output_root(args=args)
     logger = _setup_logging(args=args)
 
-    reader = _create_frames_reader(args=args)
-
     settings = json.load(fp=open(file=args['settings_file_path']))
-    detector = Detector(logger=logger, settings=settings['detector'])
-    tracker = Tracker(logger=logger, detector=detector, settings=settings['tracker'], roi=args['roi'])
+    tracker = _create_tracker(args=args, logger=logger, settings=settings)
 
-    visualiser = _create_visualiser(logger=logger, args=args, reader=reader)
+    reader = _create_frames_reader(args=args)
+    visualiser = create_visualizer(logger=logger, args=args, reader=reader)
 
     status = True
     while status:

@@ -1,3 +1,4 @@
+import abc
 import math
 import time
 
@@ -50,3 +51,15 @@ def timer(label=''):
         return on_call
 
     return on_decoration
+
+
+class Timeable(metaclass=abc.ABCMeta):
+    """
+    Provides a common interface to time operations
+    """
+
+    def __init__(self, logger):
+        self.__logger = logger
+
+    def get_logger(self):
+        return self.__logger
